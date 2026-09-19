@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import json
 import base64
 from datetime import date
-
+import requests
 import streamlit as st
 from openai import OpenAI
 from PIL import Image, ImageOps
