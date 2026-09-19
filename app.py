@@ -192,3 +192,43 @@ if st.button("Instagramの接続を確認する"):
         except Exception as e:
             st.error("接続確認中にエラーが発生しました。")
             st.write(str(e))
+st.divider()
+st.subheader("🌐 画像自動アップロード確認")
+
+if st.button("WordPressへの画像アップロードを確認する"):
+    wp_url = os.getenv("WORDPRESS_URL", "")
+    wp_username = os.getenv("WORDPRESS_USERNAME", "")
+    wp_password = os.getenv("WORDPRESS_APP_PASSWORD", "")
+
+    if uploaded is None:
+        st.warning("先に日めくり写真を選択してください。")
+    elif not wp_url or not wp_username or not wp_password:
+        st.error("WordPressの接続情報が不足しています。")
+    else:
+        try:
+            image_bytes = uploaded.getvalue()
+            filename = uploaded.name
+            content_type = uploaded.type or "image/jpeg"
+
+            response = requests.post(
+                f"{wp_url.rstrip('/')}/wp-json/wp/v2/media",
+                auth=(wp_username, wp_password),
+                headers={
+                    "Content-Disposition": f'attachment; filename="{filename}"',
+                    "Content-Type": content_type,
+                },
+                data=image_bytes,
+                timeout=60,
+            )
+
+            if response.status_code == 201:
+                media = response.json()
+                st.success("画像の自動アップロードに成功しました。")
+                st.write("公開画像URL:", media.get("source_url", ""))
+            else:
+                st.error("画像の自動アップロードに失敗しました。")
+                st.write("エラー番号:", response.status_code)
+
+        except Exception as e:
+            st.error("画像アップロード中にエラーが発生しました。")
+            st.write(str(e))
