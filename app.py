@@ -161,3 +161,4 @@ st.info("画像URLと投稿文を確認してから投稿します。")
 
 if st.button("📤 Instagramへ投稿する", type="primary"):
     st.write("投稿ボタンが押されました")
+  st.write("Instagram接続確認の準備OK")  
