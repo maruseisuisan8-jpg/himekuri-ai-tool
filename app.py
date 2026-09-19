@@ -160,5 +160,5 @@ instagram_caption = st.text_area(
 st.info("画像URLと投稿文を確認してから投稿します。")
 
 if st.button("📤 Instagramへ投稿する", type="primary"): 
-st.write("投稿ボタンが押されました")
+    st.write("投稿ボタンが押されました")
 
