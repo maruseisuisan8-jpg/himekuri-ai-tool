@@ -161,4 +161,34 @@ st.info("画像URLと投稿文を確認してから投稿します。")
 
 if st.button("📤 Instagramへ投稿する", type="primary"): 
     st.write("投稿ボタンが押されました")
+    st.divider()
+st.subheader("🔗 Instagram接続確認")
 
+if st.button("Instagramの接続を確認する"):
+    ig_token = os.getenv("INSTAGRAM_ACCESS_TOKEN", "")
+    ig_user_id = os.getenv("INSTAGRAM_USER_ID", "")
+
+    if not ig_token or not ig_user_id:
+        st.error("Instagramの接続情報が設定されていません。")
+    else:
+        try:
+            response = requests.get(
+                "https://graph.instagram.com/me",
+                params={
+                    "fields": "id,username",
+                    "access_token": ig_token
+                },
+                timeout=20
+            )
+            data = response.json()
+
+            if response.ok and data.get("id"):
+                st.success("Instagramに接続できました。")
+                st.write("Instagramユーザー名:", data.get("username", "確認できませんでした"))
+                st.write("ユーザーID一致:", str(data.get("id")) == str(ig_user_id))
+            else:
+                st.error("Instagramへの接続を確認できませんでした。")
+                st.write(data.get("error", {}).get("message", "詳細不明"))
+        except Exception as e:
+            st.error("接続確認中にエラーが発生しました。")
+            st.write(str(e))
