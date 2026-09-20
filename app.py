@@ -143,25 +143,9 @@ st.markdown(
 
 
 
-# Instagram自動投稿テスト
+# Instagram・WordPress 接続確認
+
 st.divider()
-st.subheader("📸 Instagramへ投稿")
-
-instagram_image_url = st.text_input(
-    "WordPress画像URL",
-    placeholder="https://anorifugu.co.jp/wp-content/uploads/..."
-)
-
-instagram_caption = st.text_area(
-    "Instagram投稿文",
-    height=180
-)
-
-st.info("画像URLと投稿文を確認してから投稿します。")
-
-if st.button("📤 Instagramへ投稿する", type="primary"): 
-    st.write("投稿ボタンが押されました")
-    st.divider()
 st.subheader("🔗 Instagram接続確認")
 
 if st.button("Instagramの接続を確認する"):
@@ -176,22 +160,36 @@ if st.button("Instagramの接続を確認する"):
                 "https://graph.instagram.com/me",
                 params={
                     "fields": "id,username",
-                    "access_token": ig_token
+                    "access_token": ig_token,
                 },
-                timeout=20
+                timeout=20,
             )
-            data = response.json()
 
-            if response.ok and data.get("id"):
+            ig_data = response.json()
+
+            if response.ok and ig_data.get("id"):
                 st.success("Instagramに接続できました。")
-                st.write("Instagramユーザー名:", data.get("username", "確認できませんでした"))
-                st.write("ユーザーID一致:", str(data.get("id")) == str(ig_user_id))
+                st.write(
+                    "Instagramユーザー名:",
+                    ig_data.get("username", "確認できませんでした")
+                )
+                st.write(
+                    "ユーザーID一致:",
+                    str(ig_data.get("id")) == str(ig_user_id)
+                )
             else:
                 st.error("Instagramへの接続を確認できませんでした。")
-                st.write(data.get("error", {}).get("message", "詳細不明"))
+                st.write(
+                    ig_data.get("error", {}).get(
+                        "message", "詳細不明"
+                    )
+                )
+
         except Exception as e:
             st.error("接続確認中にエラーが発生しました。")
             st.write(str(e))
+
+
 st.divider()
 st.subheader("🌐 画像自動アップロード確認")
 
@@ -207,14 +205,22 @@ if st.button("WordPressへの画像アップロードを確認する"):
     else:
         try:
             image_bytes = uploaded.getvalue()
-            filename = uploaded.name
             content_type = uploaded.type or "image/jpeg"
+
+            # 日本語ファイル名でもエラーにならないよう、
+            # WordPressへ送る時だけ安全な英数字名に変更
+            extension = os.path.splitext(uploaded.name)[1].lower()
+            if extension not in [".jpg", ".jpeg", ".png", ".webp"]:
+                extension = ".jpg"
+
+            filename = f"himekuri_{date.today().isoformat()}{extension}"
 
             response = requests.post(
                 f"{wp_url.rstrip('/')}/wp-json/wp/v2/media",
                 auth=(wp_username, wp_password),
                 headers={
-                    "Content-Disposition": f'attachment; filename="{filename}"',
+                    "Content-Disposition":
+                        f'attachment; filename="{filename}"',
                     "Content-Type": content_type,
                 },
                 data=image_bytes,
@@ -224,7 +230,10 @@ if st.button("WordPressへの画像アップロードを確認する"):
             if response.status_code == 201:
                 media = response.json()
                 st.success("画像の自動アップロードに成功しました。")
-                st.write("公開画像URL:", media.get("source_url", ""))
+                st.write(
+                    "公開画像URL:",
+                    media.get("source_url", "")
+                )
             else:
                 st.error("画像の自動アップロードに失敗しました。")
                 st.write("エラー番号:", response.status_code)
