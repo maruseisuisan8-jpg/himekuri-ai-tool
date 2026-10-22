@@ -1,7 +1,7 @@
 import os
 import json
 import base64
-from datetime import date
+from datetime import datetime, timezone, timedelta
 
 import requests
 import streamlit as st
@@ -39,6 +39,10 @@ text_model = get_secret("OPENAI_MODEL", "gpt-5.6-luna")
 image_model = get_secret("OPENAI_IMAGE_MODEL", "gpt-image-2")
 
 client = OpenAI(api_key=api_key) if api_key else None
+
+# 日本標準時（JST）で日付を統一する
+def japan_today():
+    return datetime.now(timezone(timedelta(hours=9))).date().isoformat()
 
 # =========================================================
 # セッション
@@ -89,6 +93,7 @@ if uploaded and st.button("① 今日の一言を読み取る", type="primary"):
         st.stop()
 
     # 前回データをリセット
+    st.session_state.pop("confirmed_calendar_date", None)
     st.session_state.result = None
     st.session_state.generated_image_bytes = None
     st.session_state.generated_image_name = None
@@ -103,7 +108,7 @@ if uploaded and st.button("① 今日の一言を読み取る", type="primary"):
 添付の日めくり画像を正確に読み取ってください。
 読めない箇所は絶対に推測せず「確認できません」としてください。
 
-今日の日付は {date.today().isoformat()} です。
+今日の日付は {japan_today()} です。
 
 必ず次のJSONだけを返してください。
 {{
@@ -163,6 +168,14 @@ data = st.session_state.result
 if data:
     st.divider()
     st.subheader("☀️ 今日の一言")
+
+    # 投稿前に日付を目視確認・修正できるようにする
+    confirmed_date = st.text_input(
+        "投稿する日付（画像の日付を確認し、必要なら修正してください）",
+        value=data.get("calendar_date") or japan_today(),
+        key="confirmed_calendar_date",
+    )
+    data["calendar_date"] = confirmed_date
 
     c1, c2 = st.columns(2)
     with c1:
@@ -255,7 +268,7 @@ Instagramの「日めくり一言開運」用の正方形ポスターを1枚作�
             image_bytes = base64.b64decode(image_b64)
             st.session_state.generated_image_bytes = image_bytes
             st.session_state.generated_image_name = (
-                f"himekuri_kaiun_{date.today().isoformat()}.png"
+                f"himekuri_kaiun_{japan_today()}.png"
             )
             st.session_state.ig_creation_id = None
             st.session_state.wp_image_url = None
@@ -323,7 +336,7 @@ if st.session_state.generated_image_bytes:
             with st.spinner("AI画像を公開用に準備しています..."):
                 image_bytes = st.session_state.generated_image_bytes
                 filename = st.session_state.generated_image_name or (
-                    f"himekuri_kaiun_{date.today().isoformat()}.png"
+                    f"himekuri_kaiun_{japan_today()}.png"
                 )
 
                 wp_response = requests.post(
